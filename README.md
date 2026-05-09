@@ -16,9 +16,9 @@ Mobile-first SaaS-Prototyp für kleine Handwerksbetriebe: Leistungsnachweise, Zu
 Dieses Repo ist für das frisch erstellte Supabase-Projekt vorbereitet:
 
 ```text
-Project ref: dzcqrxhwsvdfitkjgede
-URL: https://dzcqrxhwsvdfitkjgede.supabase.co
-Public key: sb_publishable_S5wHzEUYjweSjaFjTtNYQA_4TUj2EKN
+Project ref: YOUR_SUPABASE_PROJECT_REF
+URL: https://YOUR_SUPABASE_PROJECT_REF.supabase.co
+Public key: sb_publishable_YOUR_ANON_KEY
 ```
 
 Angelegt sind:
@@ -54,8 +54,8 @@ npm run preview
 5. Environment Variables setzen:
 
 ```bash
-VITE_SUPABASE_URL=https://dzcqrxhwsvdfitkjgede.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_S5wHzEUYjweSjaFjTtNYQA_4TUj2EKN
+VITE_SUPABASE_URL=https://YOUR_SUPABASE_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_YOUR_ANON_KEY
 ```
 
 Das Repo enthält zusätzlich `vercel.json`, damit der Import sauber erkannt wird.
