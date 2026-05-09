@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Camera, CheckCircle2, Clock3, Code2, Database, Download, Euro, FileText, Heart, ImagePlus, Link as LinkIcon, Lock, Plus, RefreshCcw, ShieldCheck, Sparkles, UploadCloud, Users, Wifi, WifiOff, Zap, LogIn, LogOut, User, Mail, X, ChevronRight, Star, Quote, Calendar, MessageCircle, Send, Menu } from 'lucide-react'
+import { Camera, CheckCircle2, Clock3, Code2, Database, Download, Euro, FileText, Heart, ImagePlus, Link as LinkIcon, Lock, Plus, RefreshCcw, ShieldCheck, Sparkles, UploadCloud, Users, Wifi, WifiOff, Zap, LogIn, LogOut, User, Mail, X, ChevronRight, Star, Quote, Calendar, MessageCircle, Send, Menu, MapPin, Phone, ExternalLink, ArrowRight, Check, AlertCircle, Loader2, Globe } from 'lucide-react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { demoProjects, proofTypes } from './data'
@@ -17,6 +17,14 @@ import {
 import './styles.css'
 
 const currency = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
+
+// Contact Info Constants
+const CONTACT = {
+  email: 'hcsmediagroup@gmail.com',
+  instagram: '@hcsmediagroup',
+  location: '35216 Deutschland',
+  website: 'https://hcsmedia.de'
+}
 
 function normalizeProject(row) {
   return {
@@ -230,7 +238,7 @@ function App() {
     try {
       if (authMode === 'login') {
         await signInWithMagicLink(authEmail, window.location.origin)
-        setAuthMessage('✅ Magic Link wurde an deine E-Mail gesendet!')
+        setAuthMessage('✅ Magic Link wurde an deine E-Mail gesendet! Bitte prüfe dein Postfach.')
       }
     } catch (error) {
       setAuthMessage(`❌ Fehler: ${error.message}`)
@@ -242,6 +250,20 @@ function App() {
   const handleLogout = async () => {
     await signOut()
     setUser(null)
+  }
+
+  // Contact Form Handler
+  const handleContactSubmit = async (e) => {
+    e.preventDefault()
+    const formData = new FormData(e.target)
+    const message = `Neue Anfrage von ${formData.get('name')} (${formData.get('email')}):\n\n${formData.get('message')}`
+    
+    // Create mailto link
+    const mailtoUrl = `mailto:${CONTACT.email}?subject=Neue Anfrage über HCS Nachweisboard&body=${encodeURIComponent(message)}`
+    window.open(mailtoUrl, '_blank')
+    
+    e.target.reset()
+    alert('Vielen Dank für deine Nachricht! Wir öffnen deinen E-Mail-Client zum Senden.')
   }
 
   return <main>
@@ -356,6 +378,7 @@ function App() {
     <Testimonials />
     <Pricing />
     <FAQ />
+    <ContactSection />
     <CTASection />
     <footer className="site-footer"><Code2 size={18}/> GitHub Pages + Vercel-ready · <Database size={18}/> Supabase live · made with <Heart size={15} fill="currentColor" /> by hcsmedia</footer>
   </main>
@@ -370,6 +393,7 @@ function Hero({ stats, user, onLoginClick, onLogout, mobileMenuOpen, setMobileMe
         <a href="#pricing">Preise</a>
         <a href="#testimonials">Kunden</a>
         <a href="#faq">FAQ</a>
+        <a href="#contact">Kontakt</a>
         {user ? (
           <>
             <span className="user-greeting"><User size={16} /> {user.email?.split('@')[0]}</span>
@@ -387,7 +411,7 @@ function Hero({ stats, user, onLoginClick, onLogout, mobileMenuOpen, setMobileMe
       <div>
         <span className="pill"><Sparkles size={16}/> Supabase-backed Free-first SaaS</span>
         <h1>Rechnungssichere Leistungsnachweise statt WhatsApp-Chaos.</h1>
-        <p className="lead">Dokumentiere Fotos, Zusatzarbeiten und Kundenfreigaben in 60 Sekunden – mit echter Supabase Datenbank, Storage und Vercel-ready Repo.</p>
+        <p className="lead">Dokumentiere Fotos, Zusatzarbeiten und Kundenfreigaben in 60 Sekunden – mit echter Supabase Datenbank, Storage und Vercel-ready Repo. Made in Germany 🇩🇪</p>
         <div className="hero-actions">
           <a className="primary link" href="#app"><Zap size={18}/> Live Demo starten</a>
           <a className="secondary link" href="#pricing">Free Plan ansehen</a>
@@ -584,9 +608,65 @@ function CTASection() {
         <p>Starte jetzt kostenlos und dokumentiere deine erste Baustelle in unter 60 Sekunden.</p>
         <div className="cta-actions">
           <a href="#app" className="primary link"><Zap size={18} /> Kostenlos starten</a>
-          <a href="mailto:hello@hcsmedia.de" className="secondary link"><MessageCircle size={18} /> Demo-Call buchen</a>
+          <a href={`mailto:${CONTACT.email}?subject=Demo-Call%20anfragen`} className="secondary link"><MessageCircle size={18} /> Demo-Call buchen</a>
         </div>
         <p className="cta-note">🚀 Keine Kreditkarte erforderlich · Setup in 2 Minuten</p>
+      </div>
+    </section>
+  )
+}
+
+function ContactSection() {
+  return (
+    <section className="contact-section" id="contact">
+      <span className="eyebrow center">Kontakt</span>
+      <h2>Wir sind für dich da</h2>
+      <p className="section-intro">Fragen? Wir helfen gerne! Schreib uns eine Nachricht oder folge uns auf Social Media.</p>
+      
+      <div className="contact-grid">
+        <div className="contact-card">
+          <Mail size={32} className="contact-icon" />
+          <h3>E-Mail</h3>
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
+          <p>Wir antworten innerhalb von 24 Stunden</p>
+        </div>
+        
+        <div className="contact-card">
+          <Globe size={32} className="contact-icon" />
+          <h3>Instagram</h3>
+          <a href={`https://instagram.com/${CONTACT.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer">
+            {CONTACT.instagram} <ExternalLink size={14} />
+          </a>
+          <p>Folge uns für Updates & Tipps</p>
+        </div>
+        
+        <div className="contact-card">
+          <MapPin size={32} className="contact-icon" />
+          <h3>Standort</h3>
+          <p>{CONTACT.location}</p>
+          <p>Deutschlandweit tätig</p>
+        </div>
+      </div>
+      
+      <div className="contact-form-wrapper">
+        <h3>Schreib uns eine Nachricht</h3>
+        <form onSubmit={handleContactSubmit} className="contact-form">
+          <label>
+            Name
+            <input type="text" name="name" placeholder="Dein Name" required />
+          </label>
+          <label>
+            E-Mail
+            <input type="email" name="email" placeholder="deine@email.de" required />
+          </label>
+          <label>
+            Nachricht
+            <textarea name="message" placeholder="Wie können wir dir helfen?" rows="5" required></textarea>
+          </label>
+          <button type="submit" className="primary full-width">
+            <Send size={18} /> Nachricht senden
+          </button>
+        </form>
       </div>
     </section>
   )
