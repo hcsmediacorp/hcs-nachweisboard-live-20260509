@@ -1,7 +1,1 @@
-node_modules
-dist
-.env
-.env.local
-.vercel
-.DS_Store
-npm-debug.log*
+Nothing should be ignored based on the provided file changes, as they consist only of source/config files (.md files) and a deleted .env file. No build artifacts, dependencies, or temporary files are present in the changes.
