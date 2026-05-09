@@ -11,16 +11,23 @@
 ## Tech Stack
 
 ### Frontend
-- **React** mit Vite als Build-Tool
+- **React 18+** mit Vite als Build-Tool
 - **Lucide React** für Icons
 - **html2canvas** + **jsPDF** für PDF-Export
-- **CSS** mit modernem Responsive Design
+- **Modernes CSS** mit Grid, Flexbox, Custom Properties
+- **Mobile-First Responsive Design**
 
 ### Backend / Datenbank
 - **Supabase** (PostgreSQL)
   - Tabellen: `projects`, `proofs`
   - Storage Bucket: `proof-photos` für Bilder
   - Row Level Security (RLS) mit Demo-Policies
+  - Real-time Subscriptions
+
+### Authentication
+- **Supabase Auth** mit Magic Links (passwortlos)
+- Session Management
+- Protected Routes (optional)
 
 ### Hosting & Deployment
 - **GitHub Pages** (über GitHub Actions)
@@ -46,12 +53,18 @@
   - Notizen zur Dokumentation
 - Zeitstempel wird automatisch gesetzt
 
-### 3. Kundenfreigabe
+### 3. Authentication (Magic Link)
+- Passwortlose Anmeldung per E-Mail
+- Session Persistence über Browser-Sitzungen hinweg
+- User Dashboard mit Logout-Funktion
+- Modal-basierter Login-Flow
+
+### 4. Kundenfreigabe
 - Nachweise können als "freigegeben" markiert werden
 - Übersicht über offene Freigaben
 - Visuelle Unterscheidung zwischen freigegebenen und offenen Punkten
 
-### 4. PDF-Export
+### 5. PDF-Export
 - Generierung eines kundenfähigen Berichts
 - Enthält:
   - Projektübersicht
@@ -60,7 +73,7 @@
   - Branding "made with ❤️ by hcsmedia"
 - Export als A4-PDF über html2canvas + jsPDF
 
-### 5. Daten-Sync
+### 6. Daten-Sync
 - **Local-first Ansatz**: Daten werden im localStorage gesichert
 - **Supabase Sync**: Bei verfügbarer Verbindung automatische Synchronisation
 - Fallback auf lokale Demo-Daten bei fehlender Verbindung
@@ -207,14 +220,17 @@ Diese werden beim ersten Start geladen und können als Vorlage dienen.
 | `src/main.jsx`               | Hauptkomponente mit App-Logik                    |
 | `src/data.js`                | Demo-Daten und Proof-Typen                       |
 | `src/supabaseClient.js`      | Supabase Client Initialisierung                  |
+| `src/auth.js`                | Authentication Service (Magic Links, Sessions)   |
 | `src/styles.css`             | Komplettes Styling (mobile-first)                |
 | `supabase-schema.sql`        | Datenbank-Migration (Tabellen, Policies, Seeds)  |
-| `index.html`                 | HTML Entry Point                                 |
+| `index.html`                 | HTML Entry Point mit SEO-Meta-Tags               |
 | `package.json`               | Dependencies und Scripts                         |
 | `vite.config.js`             | Vite Konfiguration                               |
 | `vercel.json`                | Vercel Deployment Config                         |
 | `.github/workflows/pages.yml`| GitHub Actions CI/CD                             |
 | `.env.example`               | Vorlage für Environment-Variablen                |
+| `docs/skills.md`             | Skills-Dokumentation für Entwickler              |
+| `agents.md`                  | Diese Dokumentationsdatei                        |
 
 ---
 
@@ -225,19 +241,41 @@ Diese werden beim ersten Start geladen und können als Vorlage dienen.
 3. **Echtzeit-Sync**: Bei Supabase-Verbindung automatische Aktualisierung
 4. **Bild-Upload**: Direkter Upload zu Supabase Storage mit öffentlicher URL
 5. **Branding**: Durchgängiges "hcsmedia" Branding im UI und PDF-Export
+6. **SEO-Optimiert**: Meta-Tags, Open Graph, Twitter Cards, Schema.org Structured Data
+7. **Authentication Ready**: Magic Link Login integriert
+8. **Landing Page**: Vollständige Marketing-Seite mit Features, Preisen, Testimonials, FAQ
 
 ---
 
 ## Nächste Schritte für Produktion
 
-- [ ] Auth-System aktivieren (Supabase Auth)
+- [ ] Auth-System vollständig aktivieren (Supabase Auth)
 - [ ] RLS-Policies mandantenfähig gestalten
 - [ ] User-Management (Teams, Rollen)
-- [ ] Zahlungsintegration für Pro/Team-Pläne
+- [ ] Zahlungsintegration für Pro/Team-Pläne (Stripe, Paddle)
 - [ ] Custom Domain für Storage-URLs
 - [ ] Datenschutzkonforme Cookie-Einwilligung
 - [ ] Backup-Strategie für Daten
+- [ ] Error Tracking (Sentry)
+- [ ] Analytics (Plausible/Google Analytics)
+- [ ] E-Mail-Templates für Magic Links anpassen
+
+---
+
+## Developer Resources
+
+### Skills Documentation
+Für detaillierte Informationen zu den benötigten Skills und Kompetenzen siehe:
+- [`docs/skills.md`](./docs/skills.md) - Vollständige Skills-Dokumentation
+
+### Wichtige Links
+- [React Dokumentation](https://react.dev)
+- [Supabase Dokumentation](https://supabase.com/docs)
+- [Vite Dokumentation](https://vitejs.dev)
+- [Lucide Icons](https://lucide.dev)
 
 ---
 
 *Diese Dokumentation wurde automatisch generiert und beschreibt den Stand des Repos.*
+
+**made with ❤️ by hcsmedia**

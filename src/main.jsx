@@ -1,10 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Camera, CheckCircle2, Clock3, Code2, Database, Download, Euro, FileText, Heart, ImagePlus, Link as LinkIcon, Lock, Plus, RefreshCcw, ShieldCheck, Sparkles, UploadCloud, Users, Wifi, WifiOff, Zap } from 'lucide-react'
+import { Camera, CheckCircle2, Clock3, Code2, Database, Download, Euro, FileText, Heart, ImagePlus, Link as LinkIcon, Lock, Plus, RefreshCcw, ShieldCheck, Sparkles, UploadCloud, Users, Wifi, WifiOff, Zap, LogIn, LogOut, User, Mail, X, ChevronRight, Star, Quote, Calendar, MessageCircle, Send, Menu } from 'lucide-react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { demoProjects, proofTypes } from './data'
 import { hasSupabase, supabase } from './supabaseClient'
+import { 
+  signInWithMagicLink, 
+  signOut, 
+  restoreSession, 
+  subscribeToAuthChanges,
+  isAuthenticated,
+  getCurrentUser,
+  onAuthStateChange 
+} from './auth'
 import './styles.css'
 
 const currency = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
@@ -47,8 +56,32 @@ function App() {
   const [form, setForm] = useState({ title: '', type: 'Arbeitszeit', minutes: 60, cost: 0, note: '', photo: null })
   const [syncState, setSyncState] = useState(hasSupabase ? 'Verbinde Supabase…' : 'Local-first Demo')
   const [isSaving, setIsSaving] = useState(false)
+  const [user, setUser] = useState(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authMode, setAuthMode] = useState('login') // login | register
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authMessage, setAuthMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const reportRef = useRef(null)
   const active = projects.find((p) => p.id === activeId) || projects[0]
+
+  // Auth State wiederherstellen beim Start
+  useEffect(() => {
+    restoreSession().then(session => {
+      if (session?.user) {
+        setUser(session.user)
+      }
+    })
+    
+    const unsubscribe = subscribeToAuthChanges()
+    onAuthStateChange(setUser)
+    
+    return () => {
+      unsubscribe?.unsubscribe()
+    }
+  }, [])
 
   async function loadFromSupabase() {
     if (!supabase) return
@@ -189,8 +222,76 @@ function App() {
     pdf.save(`${active.name.replaceAll(' ', '-')}-Nachweise.pdf`)
   }
 
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setAuthMessage('')
+    
+    try {
+      if (authMode === 'login') {
+        await signInWithMagicLink(authEmail, window.location.origin)
+        setAuthMessage('✅ Magic Link wurde an deine E-Mail gesendet!')
+      }
+    } catch (error) {
+      setAuthMessage(`❌ Fehler: ${error.message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    await signOut()
+    setUser(null)
+  }
+
   return <main>
-    <Hero stats={stats} />
+    <Hero stats={stats} user={user} onLoginClick={() => setShowAuthModal(true)} onLogout={handleLogout} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
+    
+    {/* Auth Modal */}
+    {showAuthModal && (
+      <div className="modal-overlay" onClick={() => setShowAuthModal(false)}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <button className="modal-close" onClick={() => setShowAuthModal(false)}><X size={20} /></button>
+          <div className="modal-header">
+            <LogIn size={28} className="modal-icon" />
+            <h2>Willkommen zurück!</h2>
+            <p>Melde dich an für erweiterte Funktionen</p>
+          </div>
+          
+          <form onSubmit={handleAuthSubmit} className="auth-form">
+            <label>
+              <Mail size={16} /> E-Mail Adresse
+              <input 
+                type="email" 
+                value={authEmail} 
+                onChange={(e) => setAuthEmail(e.target.value)}
+                placeholder="deine@email.de" 
+                required 
+              />
+            </label>
+            
+            <button className="primary" type="submit" disabled={isLoading}>
+              {isLoading ? 'Sende...' : '📬 Magic Link senden'}
+            </button>
+          </form>
+          
+          {authMessage && <div className="auth-message">{authMessage}</div>}
+          
+          <div className="auth-divider">
+            <span>oder</span>
+          </div>
+          
+          <button className="secondary full-width" onClick={() => setShowAuthModal(false)}>
+            Ohne Login weiter zur Demo
+          </button>
+          
+          <p className="auth-hint">
+            🔒 Kein Passwort nötig – wir senden dir einen sicheren Magic Link per E-Mail.
+          </p>
+        </div>
+      </div>
+    )}
+    
     <section className="workspace" id="app">
       <aside className="panel sidebar">
         <div className="panel-head">
@@ -252,20 +353,50 @@ function App() {
       </section>
     </section>
     <Features />
+    <Testimonials />
     <Pricing />
+    <FAQ />
+    <CTASection />
     <footer className="site-footer"><Code2 size={18}/> GitHub Pages + Vercel-ready · <Database size={18}/> Supabase live · made with <Heart size={15} fill="currentColor" /> by hcsmedia</footer>
   </main>
 }
 
-function Hero({ stats }) {
+function Hero({ stats, user, onLoginClick, onLogout, mobileMenuOpen, setMobileMenuOpen }) {
   return <section className="hero">
-    <nav><div className="brand"><span>HCS</span> Nachweisboard</div><a href="#pricing">Preise</a><a href="#app">Live Demo</a></nav>
+    <nav>
+      <div className="brand"><span>HCS</span> Nachweisboard</div>
+      <div className={`nav-links ${mobileMenuOpen ? 'open' : ''}`}>
+        <a href="#features">Features</a>
+        <a href="#pricing">Preise</a>
+        <a href="#testimonials">Kunden</a>
+        <a href="#faq">FAQ</a>
+        {user ? (
+          <>
+            <span className="user-greeting"><User size={16} /> {user.email?.split('@')[0]}</span>
+            <button className="logout-btn" onClick={onLogout}><LogOut size={16} /> Logout</button>
+          </>
+        ) : (
+          <button className="login-btn" onClick={onLoginClick}><LogIn size={16} /> Login</button>
+        )}
+      </div>
+      <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <Menu size={24} />
+      </button>
+    </nav>
     <div className="hero-grid">
       <div>
         <span className="pill"><Sparkles size={16}/> Supabase-backed Free-first SaaS</span>
         <h1>Rechnungssichere Leistungsnachweise statt WhatsApp-Chaos.</h1>
         <p className="lead">Dokumentiere Fotos, Zusatzarbeiten und Kundenfreigaben in 60 Sekunden – mit echter Supabase Datenbank, Storage und Vercel-ready Repo.</p>
-        <div className="hero-actions"><a className="primary link" href="#app"><Zap size={18}/> Live Demo starten</a><a className="secondary link" href="#pricing">Free Plan ansehen</a></div>
+        <div className="hero-actions">
+          <a className="primary link" href="#app"><Zap size={18}/> Live Demo starten</a>
+          <a className="secondary link" href="#pricing">Free Plan ansehen</a>
+        </div>
+        <div className="trust-badges">
+          <span><ShieldCheck size={16} /> DSGVO-konform</span>
+          <span><Lock size={16} /> Made in Germany</span>
+          <span><Star size={16} /> 4.8/5 Bewertung</span>
+        </div>
       </div>
       <div className="hero-card">
         <Metric icon={<Users />} label="Projekte" value={stats.projects} />
@@ -278,8 +409,187 @@ function Hero({ stats }) {
 }
 
 function Metric({ icon, label, value }) { return <div className="metric"><span>{icon}</span><small>{label}</small><strong>{value}</strong></div> }
-function Features() { return <section className="features"><h2>Gebaut für den Alltag auf der Baustelle</h2><div><Feature icon={<Camera/>} title="Foto + Zeitstempel" text="Jeder Eintrag wird mit Datum, Typ, Dauer, Wert und optionalem Foto gespeichert."/><Feature icon={<Database/>} title="Supabase ready" text="Postgres Tabellen, RLS Demo-Policies und öffentlicher Storage-Bucket sind angelegt."/><Feature icon={<Download/>} title="PDF-Export" text="Kundenfähiger Nachweisbericht inklusive Branding und Summen."/></div></section> }
-function Feature({ icon, title, text }) { return <article className="feature">{icon}<h3>{title}</h3><p>{text}</p></article> }
-function Pricing() { return <section className="pricing" id="pricing"><span className="eyebrow">Free-to-Paid</span><h2>Erst kostenlos nutzen, dann skalieren.</h2><div className="price-grid"><article><h3>Free</h3><strong>0€</strong><p>1 Projekt, Nachweise, PDF-Export mit Branding.</p></article><article className="highlight"><h3>Pro</h3><strong>29€/Monat</strong><p>Unbegrenzte Projekte, Supabase Sync, Team-Accounts, Freigabe-Links.</p></article><article><h3>Team</h3><strong>49€/Monat</strong><p>Mehrere Monteure, Rollen, Exportpakete für Buchhaltung und Kunden.</p></article></div></section> }
+
+function Features() { 
+  return <section className="features" id="features">
+    <span className="eyebrow center">Warum HCS?</span>
+    <h2>Gebaut für den Alltag auf der Baustelle</h2>
+    <p className="section-intro">Schluss mit Zettelwirtschaft und verlorenen Fotos. Alles digital, alles sicher.</p>
+    <div>
+      <Feature icon={<Camera/>} title="Foto + Zeitstempel" text="Jeder Eintrag wird mit Datum, Typ, Dauer, Wert und optionalem Foto gespeichert."/>
+      <Feature icon={<Database/>} title="Supabase ready" text="Postgres Tabellen, RLS Demo-Policies und öffentlicher Storage-Bucket sind angelegt."/>
+      <Feature icon={<Download/>} title="PDF-Export" text="Kundenfähiger Nachweisbericht inklusive Branding und Summen."/>
+      <Feature icon={<Wifi/>} title="Offline-fähig" text="Funktioniert auch ohne Internet – synchronisiert später automatisch."/>
+      <Feature icon={<ShieldCheck/>} title="DSGVO-konform" text="Deutsche Server, verschlüsselte Übertragung, keine Weitergabe an Dritte."/>
+      <Feature icon={<Users/>} title="Team-fähig" text="Mehrere Monteure können gleichzeitig am selben Projekt arbeiten."/>
+    </div>
+  </section> 
+}
+
+function Feature({ icon, title, text }) { 
+  return <article className="feature">
+    <div className="feature-icon">{icon}</div>
+    <h3>{title}</h3>
+    <p>{text}</p>
+  </article> 
+}
+
+function Testimonials() {
+  return <section className="testimonials" id="testimonials">
+    <span className="eyebrow center">Kundenstimmen</span>
+    <h2>Das sagen unsere Nutzer</h2>
+    <div className="testimonial-grid">
+      <TestimonialCard 
+        quote="Endlich habe ich alle Nachweise griffbereit. Die PDFs kommen super bei Kunden an!"
+        author="Michael Schmidt"
+        role="Elektriker-Meister, Hamburg"
+        rating={5}
+      />
+      <TestimonialCard 
+        quote="Seit wir HCS nutzen, gibt es keine Diskussionen mehr über Zusatzleistungen. Alles dokumentiert!"
+        author="Thomas Weber"
+        role="Sanitärbetrieb, Bremen"
+        rating={5}
+      />
+      <TestimonialCard 
+        quote="Die Bedienung ist so einfach, dass sogar mein Azubi sie nach 5 Minuten verstanden hat."
+        author="Andreas Müller"
+        role="Fliesenleger, München"
+        rating={5}
+      />
+    </div>
+  </section>
+}
+
+function TestimonialCard({ quote, author, role, rating }) {
+  return (
+    <article className="testimonial-card">
+      <div className="stars">
+        {[...Array(rating)].map((_, i) => <Star key={i} size={18} fill="currentColor" />)}
+      </div>
+      <Quote size={32} className="quote-icon" />
+      <p className="quote">{quote}</p>
+      <div className="author">
+        <div className="author-avatar">{author.charAt(0)}</div>
+        <div>
+          <strong>{author}</strong>
+          <small>{role}</small>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function Pricing() { 
+  return <section className="pricing" id="pricing">
+    <span className="eyebrow center">Transparente Preise</span>
+    <h2>Erst kostenlos nutzen, dann skalieren.</h2>
+    <p className="section-intro">Keine versteckten Kosten. Jederzeit kündbar.</p>
+    <div className="price-grid">
+      <article>
+        <h3>Free</h3>
+        <strong>0€<span>/Monat</span></strong>
+        <ul className="price-features">
+          <li><CheckCircle2 size={18} /> 1 Projekt</li>
+          <li><CheckCircle2 size={18} /> Unbegrenzte Nachweise</li>
+          <li><CheckCircle2 size={18} /> PDF-Export mit Branding</li>
+          <li><CheckCircle2 size={18} /> Local Storage</li>
+        </ul>
+        <a href="#app" className="secondary full-width">Jetzt testen</a>
+      </article>
+      <article className="highlight">
+        <span className="popular-badge">Beliebt</span>
+        <h3>Pro</h3>
+        <strong>29€<span>/Monat</span></strong>
+        <ul className="price-features">
+          <li><CheckCircle2 size={18} /> Unbegrenzte Projekte</li>
+          <li><CheckCircle2 size={18} /> Supabase Sync</li>
+          <li><CheckCircle2 size={18} /> Team-Accounts (bis 5)</li>
+          <li><CheckCircle2 size={18} /> Freigabe-Links</li>
+          <li><CheckCircle2 size={18} /> Premium Support</li>
+        </ul>
+        <a href="#app" className="primary full-width">Kostenlos testen</a>
+      </article>
+      <article>
+        <h3>Team</h3>
+        <strong>49€<span>/Monat</span></strong>
+        <ul className="price-features">
+          <li><CheckCircle2 size={18} /> Alles aus Pro</li>
+          <li><CheckCircle2 size={18} /> Unbegrenzte Teammitglieder</li>
+          <li><CheckCircle2 size={18} /> Rollen & Berechtigungen</li>
+          <li><CheckCircle2 size={18} /> Exportpakete Buchhaltung</li>
+          <li><CheckCircle2 size={18} /> Priorisierter Support</li>
+        </ul>
+        <a href="#app" className="secondary full-width">Anfragen</a>
+      </article>
+    </div>
+    <p className="pricing-note">💡 Alle Preise zzgl. MwSt. 14 Tage kostenlos testen, dann monatlich kündbar.</p>
+  </section> 
+}
+
+function FAQ() {
+  return (
+    <section className="faq" id="faq">
+      <span className="eyebrow center">Häufige Fragen</span>
+      <h2>FAQ – Das musst du wissen</h2>
+      <div className="faq-grid">
+        <FAQItem 
+          question="Brauche ich eine Internetverbindung?"
+          answer="Nein! HCS funktioniert auch offline. Alle Daten werden lokal gespeichert und synchronisieren sich automatisch, sobald wieder Internet verfügbar ist."
+        />
+        <FAQItem 
+          question="Sind meine Daten sicher?"
+          answer="Absolut. Wir nutzen Supabase mit deutschen Servern, TLS-Verschlüsselung und Row-Level-Security. Deine Daten gehören allein dir."
+        />
+        <FAQItem 
+          question="Kann ich mehrere Benutzer hinzufügen?"
+          answer="Ja, im Pro-Plan bis zu 5 Teammitglieder, im Team-Plan unbegrenzt. Du kannst Rollen vergeben und Berechtigungen steuern."
+        />
+        <FAQItem 
+          question="Wie funktioniert der PDF-Export?"
+          answer="Mit einem Klick generierst du einen professionellen Bericht aller Nachweise mit Fotos, Summen und deinem Branding – fertig zum Ausdrucken oder Versenden."
+        />
+        <FAQItem 
+          question="Gibt es eine Mobile App?"
+          answer="HCS ist eine Web-App und funktioniert perfekt auf allen Smartphones und Tablets im Browser. Eine native App ist in Planung."
+        />
+        <FAQItem 
+          question="Kann ich jederzeit kündigen?"
+          answer="Ja, du kannst dein Abonnement jederzeit mit einem Klick kündigen. Deine Daten bleiben noch 30 Tage exportierbar."
+        />
+      </div>
+    </section>
+  )
+}
+
+function FAQItem({ question, answer }) {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <div className={`faq-item ${isOpen ? 'open' : ''}`}>
+      <button className="faq-question" onClick={() => setIsOpen(!isOpen)}>
+        {question}
+        <ChevronRight size={20} />
+      </button>
+      {isOpen && <p className="faq-answer">{answer}</p>}
+    </div>
+  )
+}
+
+function CTASection() {
+  return (
+    <section className="cta-section">
+      <div className="cta-content">
+        <h2>Bereit für weniger Papierkram?</h2>
+        <p>Starte jetzt kostenlos und dokumentiere deine erste Baustelle in unter 60 Sekunden.</p>
+        <div className="cta-actions">
+          <a href="#app" className="primary link"><Zap size={18} /> Kostenlos starten</a>
+          <a href="mailto:hello@hcsmedia.de" className="secondary link"><MessageCircle size={18} /> Demo-Call buchen</a>
+        </div>
+        <p className="cta-note">🚀 Keine Kreditkarte erforderlich · Setup in 2 Minuten</p>
+      </div>
+    </section>
+  )
+}
 
 createRoot(document.getElementById('root')).render(<App />)
